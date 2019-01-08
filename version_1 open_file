@@ -1,0 +1,74 @@
+#include <iostream>
+#include <string.h>
+#include <fstream>
+#include <sstream>
+#include<math.h>
+
+using namespace std;
+
+/*argc 是一個整數，其值就是 argv 陣列的長度。*/
+int main(int argc, char *argv[])
+{
+    /*declaration the variables*/
+    fstream fin1,fin2;
+
+    stringstream ss;
+
+    int address_bits,number_of_sets,associativity,block_size;
+    int indexing_bit_count,indexing_bits,offset_bit_count;
+
+    int i,j;
+
+    string addr[1000];
+    string line="";
+
+    char temp;
+
+    /*initialization*/
+    address_bits=number_of_sets=associativity=block_size=indexing_bit_count=indexing_bits=offset_bit_count=0;
+
+    /*open the file cache.org*/
+    fin1.open(argv[1],ios::in);
+    if (fin1.good())
+        cout<<"open sucessfully\n";
+    else
+         cout<<"open fail\n";
+    /*to store 4 value*/
+    i=0;
+    while (fin1.get(temp))
+    {
+        if (isdigit(temp))
+        {
+            ss<<temp;
+            if (i==0)
+                ss>>address_bits;
+            else if (i==1)
+                ss>>number_of_sets;
+            else if (i==2)
+                ss>>associativity;
+            else if (i==3)
+                ss>>block_size;
+            i++;
+        }
+        if (i>=4)break;
+    }
+    fin1.close();
+
+    /*open the file reference.lst*/
+    fin2.open(argv[2],ios::in);
+    if (fin2.good())
+        cout<<"open sucessfully\n";
+    else
+         cout<<"open fail\n";
+
+    /*to store all the reference in data*/
+    i=0;
+    while (getline(fin2,line))
+    {
+        if (line[0]='.')
+        {
+            addr[i++]=line;
+        }
+    }
+    fin2.close();
+}
