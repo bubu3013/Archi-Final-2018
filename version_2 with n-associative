@@ -1,0 +1,119 @@
+#include<iostream>
+#include<stdlib.h>
+#include <string>
+#include<math.h>
+#include <sstream>
+
+using namespace std;
+
+int address_bits,number_of_sets,associativity,block_size;
+int indexing_bit_count,indexing_bits,offset_bit_count,tag_bit_count;
+
+int i,hit,miss=0;
+int valid[1000000]={0};
+int lru[100]={0};
+int idx;
+
+string memory[100][100];
+string refer="";
+string index="";
+string tag="";
+
+stringstream ss;
+
+int main()
+{
+    cout<<"Address_bits : ";
+    cin>>address_bits;
+
+    cout<<"Number _of _sets : ";
+    cin>>number_of_sets;
+
+    cout<<"Associativity : ";
+    cin>>associativity;
+
+    cout<<"Block_size : ";
+    cin>>block_size;
+
+    indexing_bit_count=log(number_of_sets)/log(2);
+    offset_bit_count=(log(block_size)/log(2));
+    tag_bit_count=address_bits-offset_bit_count-indexing_bit_count;
+
+    cout<<"Indexing bit count: "<<indexing_bit_count<<endl;
+    cout<<"Indexing bits: ";
+    for (int i=address_bits-tag_bit_count-1;i>=offset_bit_count;i--)
+        cout<<i <<" ";
+    cout<<"\nOffset bit count: "<<offset_bit_count<<endl;
+
+    while(cin>>refer)
+    {
+        /*to end the program*/
+        if (refer==".end")
+            break;
+        /*to judge the first line*/
+        else if (isalpha(refer[1]))
+        {
+            cout<<refer<<endl;
+            continue;
+        }
+        /*get index and tag*/
+        index=refer.substr(address_bits-offset_bit_count-indexing_bit_count,offset_bit_count);
+        tag=refer.substr(0,address_bits-offset_bit_count-indexing_bit_count);
+
+        ss<<index;
+        ss>>idx;
+        ss.clear();
+
+        hit=0;
+        /*whether it is invalid*/
+        if(valid[idx]==0)
+        {
+            /*store it it mem*/
+            cout<<refer<<" miss"<<endl;
+            valid[idx]=1;
+            memory[idx][0]=tag;
+            miss++;
+            /*to deal with lru*/
+            lru[idx]=(lru[idx]+1)%associativity;
+        }
+        /*whether it is valid*/
+        else if (valid[idx]==1)
+        {
+            /*to find a hit*/
+            for (int i=0;i<associativity;i++)
+            {
+                if (memory[idx][i]==tag)
+                {
+                    cout<<refer<<" hit"<<endl;
+                    /*if the hit is lru*/
+                    if (lru[idx]==i)
+                    {
+                        lru[idx]=(lru[idx]+1)%associativity;
+                    }
+                    hit=1;
+                }
+            }
+            /*cannot find a hit*/
+            if (!hit)
+            {
+                cout<<refer<<" miss"<<endl;
+                memory[idx][lru[idx]]=tag;
+                miss++;
+                /*to deal with lru*/
+                lru[idx]=(lru[idx]+1)%associativity;
+            }
+        }
+        for (int i=0;i<100;i++)
+        {
+            if (valid[i]==1)
+            {
+                for (int j=0;j<associativity;j++)
+                    cout<<"memory["<<i<<"]["<<j<<"]="<<memory[i][j]<<" ";
+                cout<<endl;
+            }
+        }
+    }
+    cout<<"\nTotal cache miss count : "<<miss<<endl;
+
+
+}
