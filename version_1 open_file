@@ -1,32 +1,35 @@
-#include <iostream>
-#include <string.h>
-#include <fstream>
-#include <sstream>
+#include<iostream>
+#include <string>
 #include<math.h>
+#include <sstream>
+#include <fstream>
 
 using namespace std;
 
-/*argc 是一個整數，其值就是 argv 陣列的長度。*/
+int address_bits,number_of_sets,associativity,block_size;
+int indexing_bit_count,indexing_bits,offset_bit_count,tag_bit_count;
+
+int i,hit,miss=0;
+int valid[1000000]={0};
+int lru[100]={0};
+int idx;
+
+char temp;
+
+fstream fin1,fin2;
+fstream file;
+
+string input[1000];
+string line="";
+string memory[1000][1000];
+string refer="";
+string index="";
+string tag="";
+
+stringstream ss;
+
 int main(int argc, char *argv[])
 {
-    /*declaration the variables*/
-    fstream fin1,fin2;
-
-    stringstream ss;
-
-    int address_bits,number_of_sets,associativity,block_size;
-    int indexing_bit_count,indexing_bits,offset_bit_count;
-
-    int i,j;
-
-    string addr[1000];
-    string line="";
-
-    char temp;
-
-    /*initialization*/
-    address_bits=number_of_sets=associativity=block_size=indexing_bit_count=indexing_bits=offset_bit_count=0;
-
     /*open the file cache.org*/
     fin1.open(argv[1],ios::in);
     if (fin1.good())
@@ -35,40 +38,59 @@ int main(int argc, char *argv[])
          cout<<"open fail\n";
     /*to store 4 value*/
     i=0;
-    while (fin1.get(temp))
+    while (getline(fin1,line))
     {
-        if (isdigit(temp))
+        if (i==0)
+            address_bits=line[line.length()-1]-'0';
+        else if (i==1)
+            number_of_sets=line[line.length()-1]-'0';
+        else if (i==2)
+            associativity=line[line.length()-1]-'0';
+        else if (i==3)
         {
-            ss<<temp;
-            if (i==0)
-                ss>>address_bits;
-            else if (i==1)
-                ss>>number_of_sets;
-            else if (i==2)
-                ss>>associativity;
-            else if (i==3)
-                ss>>block_size;
-            i++;
+            block_size=line[line.length()-1]-'0';
+            break;
         }
-        if (i>=4)break;
+        i++;
     }
     fin1.close();
-
-    /*open the file reference.lst*/
+    /*read file reference*/
+    i=0;
     fin2.open(argv[2],ios::in);
     if (fin2.good())
         cout<<"open sucessfully\n";
     else
          cout<<"open fail\n";
-
-    /*to store all the reference in data*/
-    i=0;
     while (getline(fin2,line))
     {
-        if (line[0]='.')
-        {
-            addr[i++]=line;
-        }
+        input[i++]=line;
+        //cout<<input[i++]<<endl;
     }
     fin2.close();
+    /*write data*/
+    file.open(argv[3],ios::out);
+    if (file.good())
+        cout<<"open sucessfully\n";
+    else
+         cout<<"open fail\n";
+    
+    indexing_bit_count=log(number_of_sets)/log(2);
+    offset_bit_count=(log(block_size)/log(2));
+    tag_bit_count=address_bits-offset_bit_count-indexing_bit_count;
+
+    file<<"Address bits: "<<address_bits<<endl;
+    file<<"Number of sets: "<<number_of_sets<<endl;
+    file<<"Associativity: "<<associativity<<endl;
+    file<<"Block size: "<<block_size<<endl<<endl;
+
+    file<<"Indexing bit count: "<<indexing_bit_count<<endl;
+    file<<"Indexing bits: ";
+    for (int i=address_bits-tag_bit_count-1;i>=offset_bit_count;i--)
+        file<<i <<" ";
+    file<<"\nOffset bit count: "<<offset_bit_count<<endl<<endl;
+
+    file<<input[0]<<endl;
+
+    file.close();
+
 }
