@@ -57,10 +57,10 @@ int main()
             continue;
         }
         /*get index and tag*/
-        index=refer.substr(address_bits-offset_bit_count-indexing_bit_count,offset_bit_count);
+        index=refer.substr(address_bits-offset_bit_count-indexing_bit_count,indexing_bit_count);
         tag=refer.substr(0,address_bits-offset_bit_count-indexing_bit_count);
 
-        ss<<index;
+        8ss<<index;
         ss>>idx;
         ss.clear();
 
