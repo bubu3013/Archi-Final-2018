@@ -1,0 +1,172 @@
+#include<iostream>
+#include <string>
+#include<math.h>
+#include <sstream>
+#include <fstream>
+
+using namespace std;
+
+int address_bits,number_of_sets,associativity,block_size;
+int indexing_bit_count,indexing_bits,offset_bit_count,tag_bit_count;
+
+int i,hit,miss=0;
+int valid[100000]={0};
+int lru[100]={0};
+int idx;
+
+char temp;
+
+fstream fin1,fin2;
+fstream file;
+
+string input[1000];
+string line="";
+string memory[1000][1000];
+string refer="";
+string index="";
+string tag="";
+
+stringstream ss;
+
+int main(int argc, char *argv[])
+{
+    /*open the file cache.org*/
+    fin1.open(argv[1],ios::in);
+    if (fin1.good())
+        cout<<"open sucessfully\n";
+    else
+         cout<<"open fail\n";
+    /*to store 4 value*/
+    i=0;
+    while (fin1.get(temp))
+    {
+        cout<<"YAAA"<<endl;
+        if (isdigit(temp))
+        {
+            ss<<temp;
+            if (i==0)
+                ss>>address_bits;
+            else if (i==1)
+                ss>>number_of_sets;
+            else if (i==2)
+                ss>>associativity;
+            else if (i==3)
+                ss>>block_size;
+            i++;
+        }
+        if (i>=4)break;
+    }
+    fin1.close();
+    cout<<"file 1 close successfully\n";
+
+    cout<<address_bits<<" "<<number_of_sets<<" "<<associativity<<" "<<block_size<<endl;
+
+
+    /*open the file reference.lst*/
+    fin2.open(argv[2],ios::in);
+    if (fin2.good())
+        cout<<"open sucessfully\n";
+    else
+         cout<<"open fail\n";
+
+    file.open(argv[3],ios::out);
+    if(file.fail())
+        cout<<"open fails"<<endl;
+
+    /*to store all the reference in data*/
+    i=0;
+    while (getline(fin2,line))
+    {
+        if (i==0)
+        {
+            file<<line;
+            i++;
+        }
+        else
+            input[i++]=line;
+    }
+    fin2.close();
+    cout<<"file 2 close successfully\n";
+
+    for (int i=0;i<100;i++)
+    {
+        cout<<input<<endl;
+    }
+
+    indexing_bit_count=log(number_of_sets)/log(2);
+    offset_bit_count=(log(block_size)/log(2));
+    tag_bit_count=address_bits-offset_bit_count-indexing_bit_count;
+
+
+    file<<"Indexing bit count: "<<indexing_bit_count<<endl;
+    file<<"Indexing bits: ";
+    for (int i=address_bits-tag_bit_count-1;i>=offset_bit_count;i--)
+        file<<i <<" ";
+    file<<"\nOffset bit count: "<<offset_bit_count<<endl;
+
+    file<<endl;
+    for(int k=0;;k++)
+    {
+        refer=input[k];
+        /*to end the program*/
+        if (refer==".end")
+            break;
+        /*get index and tag*/
+        index=refer.substr(address_bits-offset_bit_count-indexing_bit_count,index_bit_count);
+        tag=refer.substr(0,address_bits-offset_bit_count-indexing_bit_count);
+
+        ss<<index;
+        ss>>idx;
+        ss.clear();
+
+        hit=0;
+        /*whether it is invalid*/
+        if(valid[idx]==0)
+        {
+            /*store it it mem*/
+            file<<refer<<" miss"<<endl;
+            valid[idx]=1;
+            memory[idx][0]=tag;
+            miss++;
+            /*to deal with lru*/
+            lru[idx]=(lru[idx]+1)%associativity;
+        }
+        /*whether it is valid*/
+        else if (valid[idx]==1)
+        {
+            /*to find a hit*/
+            for (int i=0;i<associativity;i++)
+            {
+                if (memory[idx][i]==tag)
+                {
+                    file<<refer<<" hit"<<endl;
+                    /*if the hit is lru*/
+                    if (lru[idx]==i)
+                    {
+                        lru[idx]=(lru[idx]+1)%associativity;
+                    }
+                    hit=1;
+                }
+            }
+            /*cannot find a hit*/
+            if (!hit)
+            {
+                file<<refer<<" miss"<<endl;
+                memory[idx][lru[idx]]=tag;
+                miss++;
+                /*to deal with lru*/
+                lru[idx]=(lru[idx]+1)%associativity;
+            }
+        }
+        for (int i=0;i<100;i++)
+        {
+            if (valid[i]==1)
+            {
+                for (int j=0;j<associativity;j++)
+                    cout<<"memory["<<i<<"]["<<j<<"]="<<memory[i][j]<<" ";
+                cout<<endl;
+            }
+        }
+    }
+    file<<"\nTotal cache miss count : "<<miss<<endl;g
+}
