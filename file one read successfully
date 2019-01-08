@@ -1,0 +1,59 @@
+#include<iostream>
+#include <string>
+#include<math.h>
+#include <sstream>
+#include <fstream>
+
+using namespace std;
+
+int address_bits,number_of_sets,associativity,block_size;
+int indexing_bit_count,indexing_bits,offset_bit_count,tag_bit_count;
+
+int i,hit,miss=0;
+int valid[1000000]={0};
+int lru[100]={0};
+int idx;
+
+char temp;
+
+fstream fin1,fin2;
+fstream file;
+
+string input[1000];
+string line="";
+string memory[1000][1000];
+string refer="";
+string index="";
+string tag="";
+
+stringstream ss;
+
+int main(int argc, char *argv[])
+{
+    /*open the file cache.org*/
+    fin1.open(argv[1],ios::in);
+    if (fin1.good())
+        cout<<"open sucessfully\n";
+    else
+         cout<<"open fail\n";
+    /*to store 4 value*/
+    i=0;
+    while (getline(fin1,line))
+    {
+        if (i==0)
+            address_bits=line[line.length()-1]-'0';
+        else if (i==1)
+            number_of_sets=line[line.length()-1]-'0';
+        else if (i==2)
+            associativity=line[line.length()-1]-'0';
+        else if (i==3)
+        {
+            block_size=line[line.length()-1]-'0';
+            break;
+        }
+        i++;
+    }
+    fin1.close();
+ 
+
+}
