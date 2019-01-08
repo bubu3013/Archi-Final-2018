@@ -1,0 +1,99 @@
+#include<iostream>
+#include<stdlib.h>
+#include <string>
+#include<math.h>
+#include <sstream>
+
+using namespace std;
+
+int address_bits,number_of_sets,associativity,block_size;
+int indexing_bit_count,indexing_bits,offset_bit_count,tag_bit_count;
+
+int i,miss=0;
+int valid[1000000]={0};
+int mem[100][100];
+int* pt[100];
+int idx;
+
+string addr[100];
+string memory[100];
+string refer="";
+string index="";
+string tag="";
+
+stringstream ss;
+
+int main()
+{
+    cout<<"Address_bits : ";
+    cin>>address_bits;
+
+    cout<<"Number _of _sets : ";
+    cin>>number_of_sets;
+
+    cout<<"Associativity : ";
+    cin>>associativity;
+
+    cout<<"Block_size : ";
+    cin>>block_size;
+
+    indexing_bit_count=log(number_of_sets)/log(2);
+    offset_bit_count=(log(block_size)/log(2));
+    tag_bit_count=address_bits-offset_bit_count-indexing_bit_count;
+
+    cout<<"Indexing bit count: "<<indexing_bit_count<<endl;
+    cout<<"Indexing bit s: ";
+    for (int i=address_bits-tag_bit_count-1;i>=offset_bit_count;i--)
+        cout<<i <<" ";
+    cout<<"\nOffset bit count: "<<offset_bit_count<<endl;
+
+    while(cin>>refer)
+    {
+        /*to end the program*/
+        if (refer==".end")
+            break;
+        /*to judge the first line*/
+        else if (isalpha(refer[1]))
+        {
+            cout<<refer<<endl;
+            continue;
+        }
+        /*get index and tag*/
+        index=refer.substr(address_bits-offset_bit_count-indexing_bit_count,offset_bit_count);
+        tag=refer.substr(0,address_bits-offset_bit_count-indexing_bit_count);
+
+        ss<<index;
+        ss>>idx;
+        ss.clear();
+
+
+        /*whether it is invalid*/
+        if(valid[idx]==0)
+        {
+            /*store it it mem*/
+            valid[idx]=1;
+            cout<<refer<<" miss"<<endl;
+            memory[idx]=tag;
+            cout<<memory[idx]<<endl;
+            miss++;
+        }
+        /*whether it is valid*/
+        else if (valid[idx]==1)
+        {
+            if (memory[idx]==tag)
+            {
+                cout<<refer<<" hit"<<endl;
+            }
+            else if (memory[idx]!=tag)
+            {
+                cout<<refer<<" miss"<<endl;
+                memory[idx]=tag;
+                miss++;
+            }
+        }
+
+    }
+    cout<<"Total cache miss count : "<<miss<<endl;
+
+
+}
