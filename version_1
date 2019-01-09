@@ -10,8 +10,8 @@ int address_bits,number_of_sets,associativity,block_size;
 int indexing_bit_count,indexing_bits,offset_bit_count,tag_bit_count;
 
 int i,hit,miss=0;
-int valid[100]={0};
-int lru[100]={0};
+int valid[100000]={0};
+int lru[100000]={0};
 int idx;
 
 int temp;
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
         idx=temp;
 
         ss.clear();
-
+        
         hit=0;
         if (associativity==1)
         {
@@ -148,13 +148,14 @@ int main(int argc, char *argv[])
                 {
                     file<<refer<<" hit"<<endl;
                 }
-                else if (memory[idx][0]!=tag)
+                else
                 {
                     file<<refer<<" miss"<<endl;
                     memory[idx][0]=tag;
                     miss++;
                 }
             }
+
         }
         /*whether it is invalid*/
         else
