@@ -10,16 +10,16 @@ int address_bits,number_of_sets,associativity,block_size;
 int indexing_bit_count,indexing_bits,offset_bit_count,tag_bit_count;
 
 int i,hit,miss=0;
-int valid[1000000]={0};
+int valid[100]={0};
 int lru[100]={0};
 int idx;
 
-char temp;
+int temp;
 
 fstream fin1,fin2;
 fstream file;
 
-string input[1000];
+string input[9999999];
 string line="";
 string memory[1000][1000];
 string refer="";
@@ -40,15 +40,27 @@ int main(int argc, char *argv[])
     i=0;
     while (getline(fin1,line))
     {
+        if (isdigit(line[line.length()-1]))
+            temp=line[line.length()-1]-'0';
+        if (isdigit(line[line.length()-2]))
+            temp+=(line[line.length()-2]-'0')*10;
+        if (isdigit(line[line.length()-3]))
+        {
+            temp+=(line[line.length()-3]-'0')*100;
+        }
+        if (isdigit(line[line.length()-4]))
+        {
+            temp+=(line[line.length()-4]-'0')*1000;
+        }
         if (i==0)
-            address_bits=line[line.length()-1]-'0';
+            address_bits=temp;
         else if (i==1)
-            number_of_sets=line[line.length()-1]-'0';
+            number_of_sets=temp;
         else if (i==2)
-            associativity=line[line.length()-1]-'0';
+            associativity=temp;
         else if (i==3)
         {
-            block_size=line[line.length()-1]-'0';
+            block_size=temp;
             break;
         }
         i++;
@@ -74,9 +86,9 @@ int main(int argc, char *argv[])
     else
          cout<<"open fail\n";
     
-    indexing_bit_count=log(number_of_sets)/log(2);
-    offset_bit_count=(log(block_size)/log(2));
-    tag_bit_count=address_bits-offset_bit_count-indexing_bit_count;
+    indexing_bit_count=ceil(log(number_of_sets)/log(2));
+    offset_bit_count=ceil(log(block_size)/log(2));
+    tag_bit_count=ceil(address_bits-offset_bit_count-indexing_bit_count);
 
     file<<"Address bits: "<<address_bits<<endl;
     file<<"Number of sets: "<<number_of_sets<<endl;
@@ -98,58 +110,96 @@ int main(int argc, char *argv[])
         if (refer==".end")
             break;
         /*get index and tag*/
-        index=refer.substr(address_bits-offset_bit_count-indexing_bit_count,indexing_bit_count);
-        tag=refer.substr(0,address_bits-offset_bit_count-indexing_bit_count);
-
+        index=refer.substr(tag_bit_count,indexing_bit_count);
+        //cout<<index<<endl;
+        tag=refer.substr(0,tag_bit_count);
+        //cout<<tag<<endl;
         ss<<index;
         ss>>idx;
+
+        int bit=0;
+        int temp=0;
+        for (int i=0;i<indexing_bit_count;i++)
+        {
+            bit=idx%10;
+            idx=idx/10;
+            temp=temp+(bit)*pow(2,i);
+        }
+
+        idx=temp;
+
         ss.clear();
 
         hit=0;
-        /*whether it is invalid*/
-        if(valid[idx]==0)
+        if (associativity==1)
         {
-            /*store it it mem*/
-            file<<refer<<" miss"<<endl;
-            valid[idx]=1;
-            memory[idx][0]=tag;
-            miss++;
-            /*to deal with lru*/
-            lru[idx]=(lru[idx]+1)%associativity;
-        }
-        /*whether it is valid*/
-        else if (valid[idx]==1)
-        {
-            /*to find a hit*/
-            for (int i=0;i<associativity;i++)
+            if(valid[idx]==0)
             {
-                if (memory[idx][i]==tag)
+             /*store it it mem*/
+                valid[idx]=1;
+                file<<refer<<" miss"<<endl;
+                memory[idx][0]=tag;
+                miss++;
+            }
+        /*whether it is valid*/
+            else if (valid[idx]==1)
+            {
+                if (memory[idx][0]==tag)
                 {
                     file<<refer<<" hit"<<endl;
-                    /*if the hit is lru*/
-                    if (lru[idx]==i)
-                    {
-                        lru[idx]=(lru[idx]+1)%associativity;
-                    }
-                    hit=1;
+                }
+                else if (memory[idx][0]!=tag)
+                {
+                    file<<refer<<" miss"<<endl;
+                    memory[idx][0]=tag;
+                    miss++;
                 }
             }
-            /*cannot find a hit*/
-            if (!hit)
+        }
+        /*whether it is invalid*/
+        else
+        {
+            if(valid[idx]==0)
             {
+                /*store it it mem*/
                 file<<refer<<" miss"<<endl;
-                memory[idx][lru[idx]]=tag;
+                valid[idx]=1;
+                memory[idx][0]=tag;
                 miss++;
                 /*to deal with lru*/
                 lru[idx]=(lru[idx]+1)%associativity;
+            }
+            /*whether it is valid*/
+            else if (valid[idx]==1)
+            {
+                /*to find a hit*/
+                for (int i=0;i<associativity;i++)
+                {
+                    if (memory[idx][i]==tag)
+                    {
+                        file<<refer<<" hit"<<endl;
+                        /*if the hit is lru*/
+                        if (lru[idx]==i)
+                        {
+                            lru[idx]=(lru[idx]+1)%associativity;
+                        }
+                        hit=1;
+                    }
+                }
+                /*cannot find a hit*/
+                if (!hit)
+                {
+                    file<<refer<<" miss"<<endl;
+                    memory[idx][lru[idx]]=tag;
+                    miss++;
+                    /*to deal with lru*/
+                    lru[idx]=(lru[idx]+1)%associativity;
+                }
             }
         }
     }
     file<<".end\n";
     file<<"Total cache miss count: "<<miss<<endl;
 
-
-
     file.close();
-
 }
