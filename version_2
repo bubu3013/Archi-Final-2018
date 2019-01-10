@@ -1,0 +1,246 @@
+#include<iostream>
+#include <string>
+#include<math.h>
+#include <sstream>
+#include <fstream>
+#include <set>
+
+using namespace std;
+
+int address_bits,number_of_sets,associativity,block_size;
+int indexing_bit_count,indexing_bits,offset_bit_count,tag_bit_count;
+
+int i,hit,miss=0;
+int valid[100000]={0};
+int lru[100000]={0};
+int idx;
+
+int temp;
+/*this is a count*/
+int del_cnt[1000]={0};
+/*every block of set  to delete number*/
+int del_num[1000][1000];
+
+fstream fin1,fin2;
+fstream file;
+
+string input[9999999];
+string line="";
+string memory[1000][1000];
+string refer="";
+string index="";
+string tag="";
+
+stringstream ss;
+
+int main(int argc, char *argv[])
+{
+    /*open the file cache.org*/
+    fin1.open(argv[1],ios::in);
+    if (fin1.good())
+        cout<<"open sucessfully\n";
+    else
+         cout<<"open fail\n";
+    /*to store 4 value*/
+    i=0;
+    while (getline(fin1,line))
+    {
+        if (isdigit(line[line.length()-1]))
+            temp=line[line.length()-1]-'0';
+        if (isdigit(line[line.length()-2]))
+            temp+=(line[line.length()-2]-'0')*10;
+        if (isdigit(line[line.length()-3]))
+        {
+            temp+=(line[line.length()-3]-'0')*100;
+        }
+        if (isdigit(line[line.length()-4]))
+        {
+            temp+=(line[line.length()-4]-'0')*1000;
+        }
+        if (i==0)
+            address_bits=temp;
+        else if (i==1)
+            number_of_sets=temp;
+        else if (i==2)
+            associativity=temp;
+        else if (i==3)
+        {
+            block_size=temp;
+            break;
+        }
+        i++;
+    }
+    fin1.close();
+    /*read file reference*/
+    i=0;
+    fin2.open(argv[2],ios::in);
+    if (fin2.good())
+        cout<<"open sucessfully\n";
+    else
+         cout<<"open fail\n";
+    while (getline(fin2,line))
+    {
+        input[i++]=line;
+        //cout<<input[i++]<<endl;
+    }
+    fin2.close();
+    /*write data*/
+    file.open(argv[3],ios::out);
+    if (file.good())
+        cout<<"open sucessfully\n";
+    else
+         cout<<"open fail\n";
+    
+    indexing_bit_count=ceil(log(number_of_sets)/log(2));
+    offset_bit_count=ceil(log(block_size)/log(2));
+    tag_bit_count=ceil(address_bits-offset_bit_count-indexing_bit_count);
+
+    file<<"Address bits: "<<address_bits<<endl;
+    file<<"Number of sets: "<<number_of_sets<<endl;
+    file<<"Associativity: "<<associativity<<endl;
+    file<<"Block size: "<<block_size<<endl;
+
+    file<<"Indexing bit count: "<<indexing_bit_count<<endl;
+    file<<"Indexing bits: ";
+    for (int i=address_bits-tag_bit_count-1;i>=offset_bit_count;i--)
+        file<<i <<" ";
+    file<<"\nOffset bit count: "<<offset_bit_count<<endl<<endl;
+
+    file<<input[0]<<endl;
+
+    for (int k=1;;k++)
+    {
+        refer=input[k];
+        /*to end the program*/
+        if (refer==".end")
+            break;
+        /*get index and tag*/
+        index=refer.substr(tag_bit_count,indexing_bit_count);
+        //cout<<index<<endl;
+        tag=refer.substr(0,tag_bit_count);
+        //cout<<tag<<endl;
+        ss<<index;
+        ss>>idx;
+
+        int bit=0;
+        int temp=0;
+        for (int i=0;i<indexing_bit_count;i++)
+        {
+            bit=idx%10;
+            idx=idx/10;
+            temp=temp+(bit)*pow(2,i);
+        }
+
+        idx=temp;
+
+        ss.clear();
+    
+        hit=0;
+        if (associativity==1)
+        {
+            if(valid[idx]==0)
+            {
+             /*store it it mem*/
+                valid[idx]=1;
+                file<<refer<<" miss"<<endl;
+                memory[idx][0]=tag;
+                miss++;
+            }
+        /*whether it is valid*/
+            else if (valid[idx]==1)
+            {
+                if (memory[idx][0]==tag)
+                {
+                    file<<refer<<" hit"<<endl;
+                }
+                else
+                {
+                    file<<refer<<" miss"<<endl;
+                    memory[idx][0]=tag;
+                    miss++;
+                }
+            }
+
+        }
+        /*whether it is invalid*/
+        else if (associativity==2)
+        {
+            if(valid[idx]==0)
+            {
+                /*store it it mem*/
+                file<<refer<<" miss"<<endl;
+                valid[idx]=1;
+                memory[idx][lru[idx]]=tag;
+                miss++;
+                /*to deal with lru*/
+                lru[idx]=(lru[idx]+1)%associativity;
+            }
+            /*whether it is valid*/
+            else if (valid[idx]==1)
+            {
+                /*to find a hit*/
+                for (int i=0;i<2;i++)
+                {
+                    if (memory[idx][i]==tag)
+                    {
+                        file<<refer<<" hit"<<endl;
+                        /*if the hit is lru*/
+                        if (lru[idx]==i)
+                        {
+                            lru[idx]=(lru[idx]+1)%associativity;
+                        }
+                        hit=1;
+                    }
+                }
+                /*cannot find a hit*/
+                if (!hit)
+                {
+                    file<<refer<<" miss"<<endl;
+                    memory[idx][lru[idx]]=tag;
+                    miss++;
+                    /*to deal with lru*/
+                    lru[idx]=(lru[idx]+1)%associativity;
+                }
+            }
+        }
+        else  /*associativity>=4*/ 
+            {
+                /*to find a hit*/
+                for (int i=0;i<associativity;i++)
+                {
+                    if (memory[idx][i]==tag)
+                    {
+                        file<<refer<<" hit"<<endl;
+                        /*if the hit is lru*/
+                        del_num[idx][i]=del_cnt[idx];
+                        hit=1;
+                    }
+                }
+                /*cannot find a hit*/
+                if (!hit)
+                {
+                    file<<refer<<" miss"<<endl;
+                    int temp=999999;
+                    int temp_idx=0;
+                    for (int i=0;i<associativity;i++)
+                    {
+                        /*to find min of del_num*/
+                        if (temp>del_num[idx][i])
+                        {
+                            temp=del_num[idx][i];
+                            temp_idx=i;
+                        }
+                    }
+                    del_num[idx][temp_idx]=del_cnt[idx];
+                    memory[idx][temp_idx]=tag;
+                    miss++;
+                    /*to replace the lru*/
+                }
+                del_cnt[idx]+=1;
+            }
+    }
+    file<<".end\n";
+    file<<"Total cache miss count: "<<miss<<endl;
+
+    file.close();
+}
